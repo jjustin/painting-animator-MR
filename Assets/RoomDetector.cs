@@ -82,6 +82,16 @@ public class RoomDetector : MonoBehaviour
         if (!result.success)
         {
             Debug.LogErrorFormat("Photo caputre unsuccessful");
+            yield return new WaitForSeconds(2);
+            TakePhoto();
+            yield break;
+        }
+
+        if (!GlobalVars.API_URL_READY)
+        {
+            Debug.Log("API URL not ready yet");
+            yield return new WaitForSeconds(2);
+            TakePhoto();
             yield break;
         }
 
@@ -108,16 +118,11 @@ public class RoomDetector : MonoBehaviour
 
         yield return null;
 
-#if UNITY_EDITOR
-        int match_threshold = 10;
-#else
-        int match_threshold = 20;
-#endif
 
         string json;
         string url = string.Format("{0}/images/detect?skip_images={1}&good_match_threshold={2}", 
-            GlobalVars.API_URL, string.Join(",", existingPaintings), match_threshold);
-
+            GlobalVars.API_URL, string.Join(",", existingPaintings), GlobalVars.MATCH_THRESHOLD);
+        Debug.Log(GlobalVars.API_URL);
         using (UnityWebRequest www = UnityWebRequest.Post(url, form))
         {
             Debug.Log("Detect on server started");
@@ -182,7 +187,7 @@ public class RoomDetector : MonoBehaviour
         m_Canvas.transform.rotation = rotation;
 */        
         Vector3 cam_pos = cameraToWorldMatrix.GetColumn(3);
-        Debug.LogFormat("{0}, {1}", renderCam.pixelWidth, renderCam.pixelHeight);
+
         foreach (JSONNode image in parsed.Values)
         {
             bool shouldRender = true;
@@ -199,7 +204,7 @@ public class RoomDetector : MonoBehaviour
                 var screen_point = new Vector3(
                     (-1 + 2*corner[0].AsFloat),
                     (-1 + 2*(1 - corner[1].AsFloat)),
-                    renderCam.nearClipPlane);
+                    -1);
 
                 var world_2d = cameraToWorldMatrix.MultiplyPoint(projectionMatrix.inverse.MultiplyPoint(screen_point));
                 var direction = (world_2d - cam_pos).normalized;
@@ -227,7 +232,7 @@ public class RoomDetector : MonoBehaviour
             }
         }
 
-        yield return new WaitForSeconds(2);
+        //yield return new WaitForSeconds(2);
         TakePhoto();
     }
 
